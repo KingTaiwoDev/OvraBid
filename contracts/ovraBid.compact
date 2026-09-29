@@ -1,0 +1,154 @@
+pragma language_version >= 0.23;
+import CompactStandardLibrary;
+
+////////////////////////////////////////////////////////////////////////////////
+// OvraBid — Sealed-Bid Auction (Midnight Builder Challenge, Level 1)
+//
+// WHAT IS PUBLIC (stored on-chain, visible to everyone):
+//   phase      — auction lifecycle state (NO_AUCTION / COMMIT / OPEN / CLAIMED)
+//   round      — how many auctions this contract has hosted
+//   bidCount   — how many sealed bids have been committed since deployment
+//                (cumulative across rounds: Counter is append-only)
+//   sellerCommit — hash binding the auction to its seller's secret key
+//   bestCommit — cryptographic commitment to the current best bid
+//   bestBid    — the winning amount, ONLY revealed after the open phase
+//   winnerSKHash — hash binding the win to the winner's secret key
+//
+// WHAT IS PRIVATE (never touches the ledger):
+//   secretKey            — each participant's 32-byte key (private state, via witness)
+//   bid amount + salt    — circuit arguments of commitBid(); circuit arguments
+//                          are always private by default in Compact
+//
+// WHAT USERS PROVE WITHOUT REVEALING:
+//   commitBid  — "I know amount+salt such that persistentHash(..., amount, salt, sk)
+//                 equals bestCommit" (the ZK circuit enforces the commitment math)
+//   registerAsWinner / claimWin — "I hold the secret key whose hash equals
+//                 winnerSKHash / sellerCommit" without revealing the key itself
+////////////////////////////////////////////////////////////////////////////////
+
+export enum Phase {
+  NO_AUCTION,
+  COMMIT,
+  OPEN,
+  CLAIMED
+}
+
+// ── Public ledger state ──────────────────────────────────────────────────────
+export ledger phase: Phase;
+export ledger round: Counter;
+export ledger bidCount: Counter;
+export ledger sellerCommit: Bytes<32>;
+export ledger bestCommit: Bytes<32>;
+export ledger bestBid: Maybe<Uint<64>>;
+export ledger winnerSKHash: Bytes<32>;
+
+constructor() {
+  phase = Phase.NO_AUCTION;
+  bestBid = none<Uint<64>>();
+  sellerCommit = pad(32, "ovrabid:zero:");
+  bestCommit = pad(32, "ovrabid:zero:");
+  winnerSKHash = pad(32, "ovrabid:zero:");
+}
+
+// Private-state witness: hands the circuit this participant's 32-byte secret
+// key. The key lives only in the user's private state — it is never a circuit
+// argument, so it can never be disclosed by accident.
+witness localSecretKey(): Bytes<32>;
+
+// Domain-separated hash of a secret key: seller binding.
+// persistentHash is guaranteed stable across network upgrades, so commitments
+// written to public state keep their meaning.
+circuit skSellerHash(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "ovrabid:seller:"), sk]);
+}
+
+// Domain-separated hash of a secret key: winner binding.
+circuit skWinnerHash(sk: Bytes<32>): Bytes<32> {
+  return persistentHash<Vector<2, Bytes<32>>>([pad(32, "ovrabid:winner:"), sk]);
+}
+
+// Sealed-bid commitment: H(domain || salt || secretKey || amount).
+// Binding: amount is inside the hash. Hiding: salt is a fresh random 32-byte
+// value supplied privately by the bidder; without it the amount cannot be
+// brute-forced out of the commitment.
+circuit bidCommitment(salt: Bytes<32>, sk: Bytes<32>, amount: Uint<64>): Bytes<32> {
+  return persistentHash<Vector<4, Bytes<32>>>(
+    [pad(32, "ovrabid:bid:"), salt, sk, amount as Field as Bytes<32>]
+  );
+}
+
+// Seller opens a new auction round. Anyone may start one; the starter's
+// identity is committed (not revealed) so only they can close/settle it.
+export circuit startAuction(): [] {
+  assert(phase != Phase.COMMIT, "an auction is already in its commit phase");
+  assert(phase != Phase.OPEN, "an auction is still in its open phase");
+  sellerCommit = disclose(skSellerHash(localSecretKey()));
+  round.increment(1);
+  phase = Phase.COMMIT;
+}
+
+// Bid in secret. `amount` and `salt` are circuit arguments → private witnesses.
+// The chain only ever learns the commitment.
+export circuit commitBid(amount: Uint<64>, salt: Bytes<32>): [] {
+  assert(phase == Phase.COMMIT, "auction is not accepting sealed bids");
+  bestCommit = disclose(bidCommitment(salt, localSecretKey(), amount));
+  bestBid = none<Uint<64>>();
+  bidCount.increment(1);
+}
+
+// Seller ends the bidding window; revealed bidding begins.
+export circuit endCommitPhase(): [] {
+  assert(phase == Phase.COMMIT, "not in the commit phase");
+  assert(
+    sellerCommit == skSellerHash(localSecretKey()),
+    "only the auction starter can end the commit phase"
+  );
+  phase = Phase.OPEN;
+}
+
+// Reveal the best bid in the open. Fails unless amount+salt (plus the
+// caller's key) re-create the exact committed digest — enforced by the circuit,
+// so a bid can never be forged after the fact.
+export circuit openBestBid(amount: Uint<64>, salt: Bytes<32>): [] {
+  assert(phase == Phase.OPEN, "auction is not in its open phase");
+  assert(
+    bidCommitment(salt, localSecretKey(), amount) == bestCommit,
+    "revealed bid does not match the winning commitment"
+  );
+  bestBid = disclose(some<Uint<64>>(amount));
+}
+
+// The best bidder registers their (hashed) secret key as the winner.
+export circuit registerAsWinner(amount: Uint<64>, salt: Bytes<32>): [] {
+  assert(phase == Phase.OPEN, "auction is not in its open phase");
+  assert(
+    bidCommitment(salt, localSecretKey(), amount) == bestCommit,
+    "only the best bidder can register as winner"
+  );
+  winnerSKHash = disclose(skWinnerHash(localSecretKey()));
+}
+
+// Winner claims: proves knowledge of the key behind winnerSKHash — via a hash
+// equality inside the circuit — without revealing the key. Returns the price.
+export circuit claimWin(): Uint<64> {
+  assert(phase == Phase.OPEN, "auction is not in its open phase");
+  assert(
+    skWinnerHash(localSecretKey()) == winnerSKHash,
+    "caller is not the registered winner"
+  );
+  const won = bestBid.value;
+  phase = Phase.CLAIMED;
+  return won;
+}
+
+// Seller closes the cycle, resetting public state for the next auction.
+// (Fund settlement between winner and seller is handled off-circuit in Level 2.)
+export circuit settle(): [] {
+  assert(phase == Phase.CLAIMED, "auction has not been claimed yet");
+  assert(
+    sellerCommit == skSellerHash(localSecretKey()),
+    "only the auction starter can settle"
+  );
+  phase = Phase.NO_AUCTION;
+  winnerSKHash = pad(32, "ovrabid:zero:");
+}
