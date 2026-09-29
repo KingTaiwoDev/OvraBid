@@ -6,7 +6,7 @@
 
 | Network  | Address                          |
 |----------|----------------------------------|
-| Preview  | `PENDING_DEPLOYMENT`             |
+| Preview  | `e85ec45682de57e3fea9855b0db8918168c4ff87ae429380d862d58fda786bdb` |
 | Preprod  | Not deployed                     |
 
 ## What This Does
