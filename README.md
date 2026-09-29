@@ -62,6 +62,28 @@ The contract supports **multi-round auctions**: after settlement the seller can 
   compact --version
   ```
 
+## Funding Test Wallets
+
+Deploying to a public testnet requires **tNIGHT** to pay transaction fees (via generated DUST). The deploy script generates a wallet on first use, prints its address, and pauses until funds arrive. The wallet seed and 24-word recovery phrase are stored locally in `.midnight-state.json` (gitignored), so re-running a deploy reuses the same wallet and skips the wait.
+
+| Network  | Faucet                                              | Notes                                              |
+|----------|-----------------------------------------------------|----------------------------------------------------|
+| Preview  | https://midnight-tmnight-preview.nethermind.dev     | Active — see deploy wallet address below           |
+| Preprod  | https://midnight-tmnight-preprod.nethermind.dev     | Not used yet — address is generated on first preprod deploy |
+
+**How to fund:**
+
+1. Run `npm run deploy -- --network preview` (or `--network preprod`).
+2. Copy the **Wallet address** the script prints (it also appears in the `─── Fund Wallet ───` block).
+3. Open the faucet URL for that network, paste the address, complete the captcha, and request tNIGHT.
+4. The deploy resumes automatically — it polls the balance every 10 s — then registers for DUST and deploys the contract.
+
+Preview deploy wallet address:
+
+```
+mn_addr_preview14wcy6mdzsqzssqc3au853x75rnwesgkh6ar74wrknwntefj9gxxsjt6eax
+```
+
 ## Setup
 
 ```bash
