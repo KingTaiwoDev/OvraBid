@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "tsx scripts/e2e-check.ts",
+    "onchain": "tsx scripts/onchain-check.ts",
     "clean": "node scripts/clean.mjs"
   },
   "engines": {

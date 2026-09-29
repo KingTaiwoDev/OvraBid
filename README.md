@@ -68,8 +68,8 @@ Deploying to a public testnet requires **tNIGHT** to pay transaction fees (via g
 
 | Network  | Faucet                                              | Notes                                              |
 |----------|-----------------------------------------------------|----------------------------------------------------|
-| Preview  | https://midnight-tmnight-preview.nethermind.dev     | Active — see deploy wallet address below           |
-| Preprod  | https://midnight-tmnight-preprod.nethermind.dev     | Not used yet — address is generated on first preprod deploy |
+| Preview  | https://midnight-tmnight-preview.nethermind.dev     | Funded & deployed — wallet address below           |
+| Preprod  | https://midnight-tmnight-preprod.nethermind.dev     | Wallet generated, awaiting funding                 |
 
 **How to fund:**
 
@@ -78,11 +78,27 @@ Deploying to a public testnet requires **tNIGHT** to pay transaction fees (via g
 3. Open the faucet URL for that network, paste the address, complete the captcha, and request tNIGHT.
 4. The deploy resumes automatically — it polls the balance every 10 s — then registers for DUST and deploys the contract.
 
-Preview deploy wallet address:
+Preview deploy wallet address (funded):
 
 ```
 mn_addr_preview14wcy6mdzsqzssqc3au853x75rnwesgkh6ar74wrknwntefj9gxxsjt6eax
 ```
+
+Preprod deploy wallet address (awaiting funding):
+
+```
+mn_addr_preprod1t22sez2kykgcxwc4fxpe4pm3k7tyuvh9696tgl4dzghunmj72p7q7ef4p0
+```
+
+Verify the deployed contract's on-chain state via the network indexer (no explorer required — this is the same GraphQL endpoint the DApp SDK reads from):
+
+```bash
+curl -s -X POST https://indexer.preview.midnight.network/api/v4/graphql \
+  -H "Content-Type: application/json" \
+  -d '{"query":"query Q($address: HexEncoded!) { contractAction(address: $address) { state } }","variables":{"address":"e85ec45682de57e3fea9855b0db8918168c4ff87ae429380d862d58fda786bdb"}}'
+```
+
+Or run `npm run onchain` (wraps the same query and pretty-prints the decoded ledger).
 
 ## Setup
 
