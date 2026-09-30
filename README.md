@@ -7,7 +7,7 @@
 | Network  | Address                          |
 |----------|----------------------------------|
 | Preview  | `e85ec45682de57e3fea9855b0db8918168c4ff87ae429380d862d58fda786bdb` |
-| Preprod  | Not deployed                     |
+| Preprod  | `fc8c852adc8ad6f6a784b4c8d338140380acd1c723c4a853ef4904df099f533b` |
 
 ## What This Does
 
@@ -68,8 +68,8 @@ Deploying to a public testnet requires **tNIGHT** to pay transaction fees (via g
 
 | Network  | Faucet                                              | Notes                                              |
 |----------|-----------------------------------------------------|----------------------------------------------------|
-| Preview  | https://midnight-tmnight-preview.nethermind.dev     | Funded & deployed — wallet address below           |
-| Preprod  | https://midnight-tmnight-preprod.nethermind.dev     | Wallet generated, awaiting funding                 |
+| Preview  | https://midnight-tmnight-preview.nethermind.dev     | Funded & deployed                                  |
+| Preprod  | https://midnight-tmnight-preprod.nethermind.dev     | Funded & deployed                                  |
 
 **How to fund:**
 
@@ -84,7 +84,7 @@ Preview deploy wallet address (funded):
 mn_addr_preview14wcy6mdzsqzssqc3au853x75rnwesgkh6ar74wrknwntefj9gxxsjt6eax
 ```
 
-Preprod deploy wallet address (awaiting funding):
+Preprod deploy wallet address (funded):
 
 ```
 mn_addr_preprod1t22sez2kykgcxwc4fxpe4pm3k7tyuvh9696tgl4dzghunmj72p7q7ef4p0
@@ -93,12 +93,12 @@ mn_addr_preprod1t22sez2kykgcxwc4fxpe4pm3k7tyuvh9696tgl4dzghunmj72p7q7ef4p0
 Verify the deployed contract's on-chain state via the network indexer (no explorer required — this is the same GraphQL endpoint the DApp SDK reads from):
 
 ```bash
-curl -s -X POST https://indexer.preview.midnight.network/api/v4/graphql \
+curl -s -X POST https://indexer.preprod.midnight.network/api/v4/graphql \
   -H "Content-Type: application/json" \
-  -d '{"query":"query Q($address: HexEncoded!) { contractAction(address: $address) { state } }","variables":{"address":"e85ec45682de57e3fea9855b0db8918168c4ff87ae429380d862d58fda786bdb"}}'
+  -d '{"query":"query Q($address: HexEncoded!) { contractAction(address: $address) { state } }","variables":{"address":"fc8c852adc8ad6f6a784b4c8d338140380acd1c723c4a853ef4904df099f533b"}}'
 ```
 
-Or run `npm run onchain` (wraps the same query and pretty-prints the decoded ledger).
+Or run `npm run onchain -- --network preprod` (wraps the same query and pretty-prints the decoded ledger).
 
 ## Setup
 
@@ -114,10 +114,10 @@ npm run proof-server:start
 npm run compile
 ```
 
-Deploy to the **Preview** testnet:
+Deploy to a public testnet:
 
 ```bash
-npm run deploy -- --network preview
+npm run deploy -- --network preview    # or --network preprod
 ```
 
 The script generates a wallet on first use, prints its address and the faucet URL, and waits for you to fund it at https://midnight-tmnight-preview.nethermind.dev (the seed is preserved in `.midnight-state.json`, gitignored). After funding, the deploy completes and prints the **contract address**.

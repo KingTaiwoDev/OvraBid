@@ -26,6 +26,60 @@ import { deriveSecretKey } from './derive-secret-key';
 globalThis.WebSocket = WebSocket;
 
 const DUST_WAIT_TIMEOUT_MS = 5 * 60 * 1000;
+const RETRY_DELAY_MS = 5000;
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+/** Symbol Effect uses to attach its `Cause` tree to a FiberFailure. */
+const FIBER_FAILURE_CAUSE = Symbol.for('effect/Runtime/FiberFailure/Cause');
+
+/**
+ * Flatten every message reachable from an error into one string. Covers the
+ * standard Error `cause` chain AND Effect's FiberFailure `Cause` tree — the
+ * wallet SDK wraps submission rejections in a FiberFailure whose real error
+ * (e.g. the WebSocket disconnect) lives under `Cause.error`/`Cause.defect`,
+ * not the `cause` property. Without the symbol walk, the only message visible
+ * is the generic "Transaction submission error".
+ */
+function errorMessage(err: unknown): string {
+  const parts: string[] = [];
+  const seen = new Set<unknown>();
+  const visit = (node: unknown, depth: number): void => {
+    if (!node || depth > 6 || typeof node !== 'object' || seen.has(node)) return;
+    seen.add(node);
+    const msg = (node as { message?: unknown }).message;
+    if (typeof msg === 'string' && msg) parts.push(msg);
+    const obj = node as Record<string, unknown>;
+    visit(obj.cause, depth + 1); // Error cause chain
+    visit(obj.error, depth + 1); // Effect Cause.Fail
+    visit(obj.defect, depth + 1); // Effect Cause.Die
+    visit(obj.left, depth + 1); // Effect Cause.Sequential / Parallel
+    visit(obj.right, depth + 1);
+    visit((node as Record<PropertyKey, unknown>)[FIBER_FAILURE_CAUSE], depth + 1);
+  };
+  visit(err, 0);
+  return parts.join(' | ');
+}
+
+/**
+ * Public-network RPCs occasionally drop WebSocket connections mid-submission
+ * (seen on preprod: "disconnected from wss://rpc...: 1000:: Normal Closure").
+ * These are safe to retry; circuit/assertion errors from the chain are not.
+ */
+const TRANSIENT_RPC_PATTERNS = [
+  'disconnected from',
+  'normal closure',
+  'econnreset',
+  'econnrefused',
+  'etimedout',
+  'und_err',
+  'socket hang up',
+];
+
+function isTransientRpcError(err: unknown): boolean {
+  const msg = errorMessage(err).toLowerCase();
+  return TRANSIENT_RPC_PATTERNS.some((p) => msg.includes(p));
+}
 
 const { network, config: networkConfig } = resolveNetwork();
 const WALLET = getOrCreateWallet(network);
@@ -168,25 +222,44 @@ async function main() {
   }
 
   console.log('─── DUST Token Setup ───────────────────────────────────────────\n');
-  const dustState = await Rx.firstValueFrom(
-    walletCtx.wallet.state().pipe(Rx.filter((s) => s.isSynced)),
-  );
 
-  const unregisteredUtxos = dustState.unshielded.availableCoins.filter(
-    (c: any) => !c.meta?.registeredForDustGeneration,
-  );
-  if (unregisteredUtxos.length > 0) {
-    console.log(`  Registering ${unregisteredUtxos.length} NIGHT UTXOs for DUST generation...`);
-    const recipe = await walletCtx.wallet.registerNightUtxosForDustGeneration(
-      unregisteredUtxos,
-      walletCtx.unshieldedKeystore.getPublicKey(),
-      (payload) => walletCtx.unshieldedKeystore.signData(payload),
+  // Registration can die on transient public-RPC WebSocket drops. Each retry
+  // re-reads wallet state first, so already-registered UTXOs are skipped and a
+  // retry never double-submits.
+  const DUST_SUBMIT_RETRIES = 5;
+  for (let attempt = 1; attempt <= DUST_SUBMIT_RETRIES; attempt++) {
+    const dustState = await Rx.firstValueFrom(
+      walletCtx.wallet.state().pipe(Rx.filter((s) => s.isSynced)),
     );
-    const finalized = await walletCtx.wallet.finalizeRecipe(recipe);
-    await walletCtx.wallet.submitTransaction(finalized);
+    const unregisteredUtxos = dustState.unshielded.availableCoins.filter(
+      (c: any) => !c.meta?.registeredForDustGeneration,
+    );
+    if (unregisteredUtxos.length === 0) break;
+
+    try {
+      console.log(`  Registering ${unregisteredUtxos.length} NIGHT UTXOs for DUST generation...`);
+      const recipe = await walletCtx.wallet.registerNightUtxosForDustGeneration(
+        unregisteredUtxos,
+        walletCtx.unshieldedKeystore.getPublicKey(),
+        (payload) => walletCtx.unshieldedKeystore.signData(payload),
+      );
+      const finalized = await walletCtx.wallet.finalizeRecipe(recipe);
+      await walletCtx.wallet.submitTransaction(finalized);
+      break;
+    } catch (err) {
+      if (attempt < DUST_SUBMIT_RETRIES && isTransientRpcError(err)) {
+        console.log(`  ⚠ Transient RPC error (${errorMessage(err)}) — retrying (${attempt}/${DUST_SUBMIT_RETRIES})...`);
+        await sleep(RETRY_DELAY_MS);
+        continue;
+      }
+      throw err;
+    }
   }
 
-  if (dustState.dust.balance(new Date()) === 0n) {
+  const postRegistrationState = await Rx.firstValueFrom(
+    walletCtx.wallet.state().pipe(Rx.filter((s) => s.isSynced)),
+  );
+  if (postRegistrationState.dust.balance(new Date()) === 0n) {
     console.log('  Waiting for DUST tokens...');
     try {
       await Rx.firstValueFrom(
@@ -229,7 +302,6 @@ async function main() {
 
   console.log('  Deploying contract...\n');
   const MAX_RETRIES = 20;
-  const RETRY_DELAY_MS = 5000;
   let deployed: any;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -242,25 +314,29 @@ async function main() {
       });
       break;
     } catch (err: any) {
+      const fullError = errorMessage(err);
       const errMsg = err?.message || err?.toString() || '';
       const errCause = err?.cause?.message || err?.cause?.toString() || '';
-      const fullError = `${errMsg} ${errCause}`;
 
       const isDustShortage =
         fullError.includes('Not enough Dust') ||
         fullError.includes('Insufficient Funds') ||
         fullError.includes('could not balance dust');
 
+      const transient = isTransientRpcError(err);
       if (!(isDustShortage && attempt === 1)) {
         console.error(`\n  Attempt ${attempt} error: ${errMsg}`);
         if (errCause && errCause !== errMsg) console.error(`  Cause: ${errCause}`);
       }
 
-      if (isDustShortage && attempt < MAX_RETRIES) {
-        console.log(`  ⏳ retrying in ${RETRY_DELAY_MS / 1000}s... (attempt ${attempt}/${MAX_RETRIES})`);
+      // Retry DUST shortages (DUST becomes spendable on later blocks) and
+      // transient RPC drops. A retry after an ambiguous disconnect can in the
+      // worst case deploy a duplicate contract — the address is salted — but
+      // the alternative is failing a deploy whose tx actually landed.
+      if ((isDustShortage || transient) && attempt < MAX_RETRIES) {
+        const why = isDustShortage ? 'DUST not spendable yet' : 'transient RPC error';
+        console.log(`  ⏳ ${why} — retrying in ${RETRY_DELAY_MS / 1000}s... (attempt ${attempt}/${MAX_RETRIES})`);
         await new Promise((r) => setTimeout(r, RETRY_DELAY_MS));
-      } else if (attempt === MAX_RETRIES) {
-        throw err;
       } else {
         throw err;
       }
@@ -272,6 +348,28 @@ async function main() {
   const contractAddress = deployed.deployTxData.public.contractAddress;
   console.log('  ✅ Contract deployed successfully!\n');
   console.log(`  Contract Address: ${contractAddress}\n`);
+
+  // The deploy tx was finalized, but "deployed" also means "readable via the
+  // indexer". Poll until the chain state shows up so the recorded address is
+  // verified, not just submitted.
+  console.log('  Verifying on-chain state via indexer...');
+  const VERIFY_TIMEOUT_MS = 2 * 60 * 1000;
+  const verifyStart = Date.now();
+  let verified = false;
+  while (Date.now() - verifyStart < VERIFY_TIMEOUT_MS) {
+    const state = await providers.publicDataProvider.queryContractState(contractAddress);
+    if (state) {
+      verified = true;
+      break;
+    }
+    await sleep(5000);
+  }
+  process.stdout.write('\r' + ' '.repeat(50) + '\r');
+  if (verified) {
+    console.log('  ✓ Contract state confirmed on-chain.\n');
+  } else {
+    console.log('  ⚠ Contract not yet indexed after 2 min — tx was accepted; check `npm run onchain` later.\n');
+  }
 
   recordDeployment(network, contractAddress, address.toString());
   console.log('  Saved to .midnight-state.json\n');
