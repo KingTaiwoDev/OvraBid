@@ -37,6 +37,16 @@ export const PREPROD_CONTRACT_ADDRESS =
 /** NetworkId handed to wallet.connect() — the dApp is preprod-only. */
 export const TARGET_NETWORK_ID = 'preprod';
 
+/**
+ * Decide whether the wallet's reported network is acceptable. The wallet's
+ * own indexer/proof-server configuration determines what it can actually
+ * reach, so only an explicit mainnet report is rejected.
+ */
+export function isAcceptableNetwork(networkId: string | undefined): boolean {
+  if (!networkId) return true; // wallet gave no hint — trust its config
+  return !networkId.toLowerCase().includes('mainnet');
+}
+
 export type ConnectStatus =
   | 'no-wallet'
   | 'disconnected'

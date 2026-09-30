@@ -22,6 +22,7 @@ import { createOvraBidPrivateState, freshSecretKey } from '../lib/private-state'
 import {
   TARGET_NETWORK_ID,
   PREPROD_CONTRACT_ADDRESS,
+  isAcceptableNetwork,
   classifyWalletError,
   type ConnectStatus,
   type WalletError,
@@ -129,14 +130,16 @@ export function useMidnight(): UseMidnight {
       const connectedAPI = await wallet.api.connect(TARGET_NETWORK_ID);
       connectedRef.current = connectedAPI;
 
-      // Network guard: the dApp only speaks preprod.
+      // Network guard: reject only explicit mainnet — the wallet's own
+      // indexer/proof-server configuration determines what it can reach.
       const config = await connectedAPI.getConfiguration();
-      if (config.networkId && !config.networkId.toLowerCase().includes('preprod')) {
+      if (!isAcceptableNetwork(config.networkId)) {
         throw Object.assign(
           new Error(`Wallet reported networkId ${config.networkId}, expected preprod`),
           { code: 'network-mismatch' },
         );
       }
+      console.info('[OvraBid] wallet network:', config.networkId ?? '(unspecified)');
 
       const providers = await buildProviders(connectedAPI);
       providersRef.current = providers;
