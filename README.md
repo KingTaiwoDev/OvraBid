@@ -141,7 +141,11 @@ npm test
 
 ## Initial Idea
 
-[LEAVE PLACEHOLDER — I will fill this in manually]
+Every auction I had seen on a public chain had the same flaw: the bid is the transaction. Anyone watching can read your ceiling from the ledger, wait for the last block, and outbid you by the smallest possible margin. Sealed-bid formats — the kind used for procurement, spectrum licenses, and treasury issuance in traditional finance — were simply impossible when the ledger itself is the room.
+
+Midnight changed that calculus for me. Its data-protection model lets the competitive information in an application (an amount, a choice, an identity) live inside zero-knowledge circuits and private state, while the coordination information — phases, counters, commitments — stays publicly verifiable. That is exactly the split a sealed-bid auction needs: everyone can see that an auction is running and how many bids exist, but nobody can see what anyone bid.
+
+So I built OvraBid. The chain stores only commitment digests (a `persistentHash` of the amount, a fresh salt, and the bidder's secret key); the winning amount is revealed inside a ZK circuit rather than in a transaction; and the winner proves they hold the winning preimage — all without the ledger ever learning a bid before the open phase. The point I wanted this submission to prove is that an application's state machine can be fully public while its valuable state stays sealed — and that every claim here is independently verifiable: compile the contract yourself, run the 18 circuit tests, and query the indexer for both deployed contracts.
 
 ## Screenshots
 
