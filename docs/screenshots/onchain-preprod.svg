@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="672" height="224" viewBox="0 0 672 224" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" role="img" aria-label="ovrabid — indexer check, preprod">
+<rect width="672" height="224" rx="8" fill="#0d1117" stroke="#30363d"/>
+<path d="M0 8 a8 8 0 0 1 8 -8 h656 a8 8 0 0 1 8 8 v28 h-672 z" fill="#161b22"/>
+<line x1="0" y1="36" x2="672" y2="36" stroke="#30363d"/>
+<circle cx="18" cy="18" r="5.5" fill="#ff5f56"/>
+<circle cx="36" cy="18" r="5.5" fill="#ffbd2e"/>
+<circle cx="54" cy="18" r="5.5" fill="#27c93f"/>
+<text x="656" y="22" fill="#8b949e" font-size="11" text-anchor="end" xml:space="preserve">ovrabid — indexer check, preprod</text>
+<text x="16" y="63" fill="#79c0ff" font-weight="600" xml:space="preserve">$ npm run onchain -- --network preprod</text>
+<text x="16" y="83" fill="#3fb950" xml:space="preserve">✅ OvraBid is live on preprod and indexed by the chain</text>
+<text x="16" y="103" fill="#c9d1d9" xml:space="preserve">   address:     fc8c852adc8ad6f6a784b4c8d338140380acd1c723c4a853ef4904df099f533b</text>
+<text x="16" y="123" fill="#c9d1d9" xml:space="preserve">   phase:       NO_AUCTION</text>
+<text x="16" y="143" fill="#c9d1d9" xml:space="preserve">   round:       0</text>
+<text x="16" y="163" fill="#c9d1d9" xml:space="preserve">   bidCount:    0</text>
+<text x="16" y="183" fill="#c9d1d9" xml:space="preserve">   bestCommit:  0x6f7672616269643a7a65726f3a00000000000000000000000000000000000000</text>
+<text x="16" y="203" fill="#c9d1d9" xml:space="preserve">   bestBid:     (sealed)</text>
+</svg>

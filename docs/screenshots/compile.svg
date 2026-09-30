@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="244" viewBox="0 0 640 244" font-family="ui-monospace,SFMono-Regular,Menlo,Consolas,monospace" font-size="13" role="img" aria-label="ovrabid — fresh compile">
+<rect width="640" height="244" rx="8" fill="#0d1117" stroke="#30363d"/>
+<path d="M0 8 a8 8 0 0 1 8 -8 h624 a8 8 0 0 1 8 8 v28 h-640 z" fill="#161b22"/>
+<line x1="0" y1="36" x2="640" y2="36" stroke="#30363d"/>
+<circle cx="18" cy="18" r="5.5" fill="#ff5f56"/>
+<circle cx="36" cy="18" r="5.5" fill="#ffbd2e"/>
+<circle cx="54" cy="18" r="5.5" fill="#27c93f"/>
+<text x="624" y="22" fill="#8b949e" font-size="11" text-anchor="end" xml:space="preserve">ovrabid — fresh compile</text>
+<text x="16" y="63" fill="#79c0ff" font-weight="600" xml:space="preserve">$ npm run compile</text>
+<text x="16" y="83" fill="#c9d1d9" xml:space="preserve">&gt; ovrabid@1.0.0 compile</text>
+<text x="16" y="103" fill="#c9d1d9" xml:space="preserve">&gt; compact compile contracts/ovraBid.compact contracts/managed/ovraBid</text>
+<text x="16" y="143" fill="#3fb950" xml:space="preserve">Compiling 7 circuits:</text>
+<text x="16" y="163" fill="#3fb950" xml:space="preserve">Done. Exit code 0.</text>
+<text x="16" y="183" fill="#c9d1d9" xml:space="preserve"></text>
+<text x="16" y="203" fill="#c9d1d9" xml:space="preserve">$ ls contracts/managed/ovraBid/keys | wc -l</text>
+<text x="16" y="223" fill="#c9d1d9" xml:space="preserve">14</text>
+</svg>

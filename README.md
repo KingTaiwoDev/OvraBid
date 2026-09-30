@@ -145,4 +145,16 @@ npm test
 
 ## Screenshots
 
-[LEAVE PLACEHOLDER — I will add compile output and contract address screenshots]
+Fresh compile of the contract (7 circuits, prover/verifier keys generated):
+
+![Compile output](docs/screenshots/compile.svg)
+
+Live on-chain verification via the network indexer — the same GraphQL endpoint the DApp SDK reads:
+
+![On-chain state on preview](docs/screenshots/onchain-preview.svg)
+
+![On-chain state on preprod](docs/screenshots/onchain-preprod.svg)
+
+The in-process circuit test suite (no network, no prover):
+
+![Test suite](docs/screenshots/tests.svg)
