@@ -1,5 +1,7 @@
 # OvraBid
 
+![CI](https://github.com/KingTaiwoDev/OvraBid/actions/workflows/ci.yml/badge.svg)
+
 > A sealed-bid auction on Midnight: private bids, verifiable winner — now with a browser dApp.
 
 ## Live Demo
@@ -30,6 +32,10 @@ The contract supports **multi-round auctions**: after settlement the seller can 
 In the browser dApp, **Seal a secret bid** calls the `commitBid` circuit: the amount is generated inside your browser, proven locally against the circuit's prover key, balanced and signed by Lace, and submitted to preprod — the UI itself never displays the amount (it shows `████ (sealed)`).
 
 ## Privacy Model
+
+- **PUBLIC:** auction `phase`, `round`, `bidCount`, the commitment digests (`sellerCommit`, `bestCommit`, `winnerSKHash`), and the winning `bestBid` after the open phase
+- **PRIVATE:** each bid's `amount`, the per-bid random `salt`, and every participant's 32-byte `secretKey`
+- **PROVED without revealing:** that each commitment binds a real (amount, salt, key) triple, that a revealed bid matches `bestCommit`, and that the winner/seller holds the key behind `winnerSKHash` / `sellerCommit`
 
 **What is PUBLIC (on-chain, visible to anyone):**
 - `phase` — the auction lifecycle: `NO_AUCTION → COMMIT → OPEN → CLAIMED`
@@ -115,7 +121,7 @@ curl -s -X POST https://indexer.preprod.midnight.network/api/v4/graphql \
 
 Or run `npm run onchain -- --network preprod` (wraps the same query and pretty-prints the decoded ledger).
 
-## Setup
+## Setup & Run Locally
 
 ```bash
 git clone https://github.com/KingTaiwoDev/OvraBid.git
@@ -128,6 +134,17 @@ npm run proof-server:start
 # compile the contract (creates contracts/managed/ovraBid)
 npm run compile
 ```
+
+Run the browser dApp locally:
+
+```bash
+npm run web:install && npm run sync:web   # web deps + fresh contract assets
+npm run dev                               # http://localhost:5173
+```
+
+Open http://localhost:5173, click **Connect Lace**, and seal a bid. The proof
+is generated in your browser via your wallet's proof server; the private
+amount never leaves it.
 
 Deploy to a public testnet:
 
@@ -162,19 +179,23 @@ npm run web:build    # typecheck + production build
 npm run dev          # dev server at http://localhost:5173
 ```
 
-### Running the dApp locally
+## CI/CD
 
-```bash
-npm install && npm run web:install
-npm run compile && npm run sync:web   # refreshes web/public/contract assets
-npm run dev
-```
+Every push to `main` and every pull request runs the GitHub Actions pipeline
+(`.github/workflows/ci.yml`):
 
-Open http://localhost:5173, click **Connect Lace**, and seal a bid. The proof
-is generated in your browser via your wallet's proof server; the private
-amount never leaves it.
+1. Checkout and Node.js v22 setup
+2. Install the Compact toolchain (0.31.1) and npm dependencies
+3. `compact compile` — builds all 7 circuits with their prover/verifier keys
+4. Typecheck and run the 18-test circuit suite (in-process simulator)
+5. Sync browser artifacts, then install, typecheck, build and unit-test the dApp (8 tests)
+6. Boot the built dApp in headless Chromium and run the browser smoke test — the real circuits execute in-page
 
-**How the browser loads the contract:** the compiled module
+The badge at the top of this README reflects the latest run on `main`.
+
+### How the browser loads the contract
+
+The compiled module
 (`web/public/contract/ovraBid/contract/index.js`, refreshed by
 `npm run sync:web`) is **bundled into the app** by Vite, so the circuits,
 midnight-js and `@midnight-ntwrk/compact-runtime` share a single runtime
@@ -211,6 +232,10 @@ Every auction I had seen on a public chain had the same flaw: the bid is the tra
 Midnight changed that calculus for me. Its data-protection model lets the competitive information in an application (an amount, a choice, an identity) live inside zero-knowledge circuits and private state, while the coordination information — phases, counters, commitments — stays publicly verifiable. That is exactly the split a sealed-bid auction needs: everyone can see that an auction is running and how many bids exist, but nobody can see what anyone bid.
 
 So I built OvraBid. The chain stores only commitment digests (a `persistentHash` of the amount, a fresh salt, and the bidder's secret key); the winning amount is revealed inside a ZK circuit rather than in a transaction; and the winner proves they hold the winning preimage — all without the ledger ever learning a bid before the open phase. The point I wanted this submission to prove is that an application's state machine can be fully public while its valuable state stays sealed — and that every claim here is independently verifiable: compile the contract yourself, run the 18 circuit tests, and query the indexer for both deployed contracts.
+
+## Product Proposal
+
+See [PROPOSAL.md](PROPOSAL.md).
 
 ## Demo Video
 
