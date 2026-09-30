@@ -1,4 +1,18 @@
-import type { UseMidnight } from '../hooks/useMidnight';
+import type { ConnectStatus } from '../lib/types';
+
+/**
+ * Structural view of the wallet state — satisfied both by the live
+ * `useMidnight` hook and by the demo-mode hook, so this panel renders
+ * identically in either mode.
+ */
+export interface WalletPanelModel {
+  status: ConnectStatus;
+  error: { kind: string; message: string } | null;
+  walletName: string | null;
+  address: string | null;
+  connect: () => Promise<void>;
+  disconnect: () => Promise<void>;
+}
 
 const STATUS_TEXT: Record<string, string> = {
   'no-wallet': 'Lace (Midnight edition) not detected — install the extension and refresh.',
@@ -8,7 +22,7 @@ const STATUS_TEXT: Record<string, string> = {
   error: 'Connection failed.',
 };
 
-export function WalletConnect({ midnight }: { midnight: UseMidnight }) {
+export function WalletConnect({ midnight }: { midnight: WalletPanelModel }) {
   const { status, error, walletName, address, connect, disconnect } = midnight;
   const connecting = status === 'connecting';
 

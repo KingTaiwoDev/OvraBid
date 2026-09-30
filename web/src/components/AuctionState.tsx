@@ -1,6 +1,14 @@
-import type { UseMidnight } from '../hooks/useMidnight';
+import type { UseMidnight, AuctionStateView } from '../hooks/useMidnight';
+import type { ConnectStatus } from '../lib/types';
 
-export function AuctionState({ midnight }: { midnight: UseMidnight }) {
+/** Structural view — satisfied by live mode and demo mode alike. */
+export interface AuctionPanelModel {
+  status: ConnectStatus;
+  auction: AuctionStateView | null;
+  refreshAuction: () => Promise<AuctionStateView | null>;
+}
+
+export function AuctionState({ midnight }: { midnight: AuctionPanelModel }) {
   const { auction, status } = midnight;
   const connected = status === 'connected';
 
