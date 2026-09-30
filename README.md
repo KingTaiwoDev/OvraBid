@@ -196,6 +196,14 @@ submission video is recorded against the **live deployment** with Lace; use
 the committed recording to verify the circuit flow without installing
 anything.
 
+`docs/demo/ovrabid-storyboard.mp4` (from
+`node scripts/record-storyboard.mjs`) is a screenshot-compilation walkthrough
+built only from real captures: the live deployment as it renders, the
+contract's **current preprod state queried live from the network indexer**,
+and the in-browser circuit run — with caption cards marking the two
+Lace-only moments (approval popup, signed transaction) that come from the
+owner's own screen recording.
+
 ## Initial Idea
 
 Every auction I had seen on a public chain had the same flaw: the bid is the transaction. Anyone watching can read your ceiling from the ledger, wait for the last block, and outbid you by the smallest possible margin. Sealed-bid formats — the kind used for procurement, spectrum licenses, and treasury issuance in traditional finance — were simply impossible when the ledger itself is the room.
