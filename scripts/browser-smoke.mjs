@@ -18,6 +18,11 @@ import { readFile, stat } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+// Optional target: `node scripts/browser-smoke.mjs https://ovrabid.netlify.app`
+// audits the DEPLOYED site; default audits the local web/dist build.
+const TARGET = process.argv[2] ?? 'http://localhost:4173';
+const LOCAL = TARGET === 'http://localhost:4173';
+
 const DIST = fileURLToPath(new URL('../web/dist', import.meta.url));
 
 const MIME = {
@@ -53,8 +58,13 @@ const server = createServer(async (req, res) => {
   }
 });
 
-await new Promise((ok) => server.listen(4173, ok));
-console.log('serving web/dist at http://localhost:4173');
+if (LOCAL) {
+  await new Promise((ok) => server.listen(4173, ok));
+  console.log('serving web/dist at http://localhost:4173');
+} else {
+  server.close(); // not needed when auditing a deployed URL
+  console.log('auditing deployed site:', TARGET);
+}
 
 const browser = await chromium.launch();
 const failures = [];
@@ -64,7 +74,7 @@ const failures = [];
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('http://localhost:4173/', { waitUntil: 'networkidle' });
+  await page.goto(`${TARGET}/`, { waitUntil: 'networkidle' });
 
   const h1 = await page.textContent('h1');
   if (h1 !== 'OvraBid') failures.push(`live: h1 = ${JSON.stringify(h1)}`);
@@ -74,7 +84,7 @@ const failures = [];
   if (errors.length) failures.push(`live: uncaught page errors: ${errors.join(' | ')}`);
 
   // zkConfig assets must be statically reachable (live mode fetches them).
-  const prover = await page.request.get('http://localhost:4173/contract/ovraBid/keys/commitBid.prover');
+  const prover = await page.request.get(`${TARGET}/contract/ovraBid/keys/commitBid.prover`);
   if (prover.status() !== 200) failures.push(`live: commitBid.prover HTTP ${prover.status()}`);
 
   await page.close();
@@ -86,7 +96,7 @@ const failures = [];
   const page = await browser.newPage();
   const errors = [];
   page.on('pageerror', (e) => errors.push(e.message));
-  await page.goto('http://localhost:4173/?demo=1', { waitUntil: 'networkidle' });
+  await page.goto(`${TARGET}/?demo=1`, { waitUntil: 'networkidle' });
 
   const banner = await page.getByText('SIMULATED — demo recording mode', { exact: false }).count();
   if (banner === 0) failures.push('demo: SIMULATED banner missing');
@@ -130,7 +140,7 @@ const failures = [];
 }
 
 await browser.close();
-server.close();
+if (LOCAL) server.close();
 
 if (failures.length) {
   console.error('SMOKE TEST FAILED:\n - ' + failures.join('\n - '));
