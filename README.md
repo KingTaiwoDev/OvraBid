@@ -4,7 +4,7 @@
 
 ## Live Demo
 
-[PENDING — pasted after Netlify deploy]
+**https://ovrabid.netlify.app** — connect Lace (preprod), seal a secret bid, watch the proof run in your browser.
 
 ## Contract Address
 
