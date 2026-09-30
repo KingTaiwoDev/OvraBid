@@ -1,0 +1,17 @@
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/card-title.png'
+duration 4
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/flow-landing.png'
+duration 5
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/flow-connected.png'
+duration 5
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/flow-proving.png'
+duration 5
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/flow-sealed.png'
+duration 6
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/tests.png'
+duration 8
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/readme-badge.png'
+duration 6
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/card-close.png'
+duration 4
+file '/workspaces/AstroPay/OvraBid/docs/demo/level3/card-close.png'
