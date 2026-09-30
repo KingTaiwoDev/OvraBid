@@ -1,0 +1,30 @@
+# Netlify deploy config for the OvraBid browser dApp.
+# The site serves web/dist; the zkConfig assets under
+# web/public/contract/ovraBid are part of the build output (public/ is copied
+# verbatim by Vite) so FetchZkConfigProvider can fetch them at runtime.
+
+[build]
+  base = "web"
+  command = "npm ci && npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# WASM must be served with the standard MIME type.
+[[headers]]
+  for = "/*.wasm"
+  [headers.values]
+    Content-Type = "application/wasm"
+
+# Long-cache the immutable build artifacts; keys/zkir are content-addressed by
+# the compiler version and can be cached aggressively too.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/contract/*"
+  [headers.values]
+    Cache-Control = "public, max-age=86400"

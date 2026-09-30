@@ -33,3 +33,18 @@ jobs:
 
       - name: Test (in-process circuit simulator)
         run: npm test
+
+      - name: Sync browser artifacts
+        run: npm run sync:web
+
+      - name: Install web deps
+        run: npm --prefix web ci
+
+      - name: Typecheck web dApp
+        run: npm --prefix web run typecheck
+
+      - name: Build web dApp
+        run: npm --prefix web run build
+
+      - name: Test web dApp
+        run: npm --prefix web run test
