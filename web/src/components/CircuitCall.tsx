@@ -49,6 +49,9 @@ export function CircuitCall({ midnight }: { midnight: UseMidnight }) {
     <section className="panel">
       <h2>
         Seal a bid
+        <span className="privacy-badge" title="Your bid amount is a private circuit input — it is never displayed, logged, or put on-chain">
+          PRIVATE — amount sealed
+        </span>
         {phase === 'done' ? <span className="badge">Proved without revealing your input</span> : null}
       </h2>
 
@@ -65,7 +68,18 @@ export function CircuitCall({ midnight }: { midnight: UseMidnight }) {
         {!connected ? <span className="muted">Connect your wallet first.</span> : null}
       </div>
 
-      {phase !== 'idle' ? <p className="status muted">{PHASE_TEXT[phase]}</p> : null}
+      {busy || phase === 'done' ? (
+        <p className="status muted" role="status" aria-busy={busy}>
+          {busy ? (
+            <span className="spinner-row">
+              <span className="spinner" aria-hidden="true" />
+              {PHASE_TEXT[phase]}
+            </span>
+          ) : (
+            PHASE_TEXT[phase]
+          )}
+        </p>
+      ) : null}
 
       {result ? (
         <div className="status">

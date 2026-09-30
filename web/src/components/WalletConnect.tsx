@@ -59,8 +59,21 @@ export function WalletConnect({ midnight }: { midnight: WalletPanelModel }) {
             className="primary"
             disabled={connecting || status === 'no-wallet'}
             onClick={() => void connect()}
+            aria-busy={connecting}
           >
-            {connecting ? 'Connecting…' : 'Connect Lace'}
+            {connecting ? (
+              <span
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                }}
+              >
+                <span className="spinner" aria-hidden="true" /> Connecting…
+              </span>
+            ) : (
+              'Connect Lace'
+            )}
           </button>
         )}
       </div>

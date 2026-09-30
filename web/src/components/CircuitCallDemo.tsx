@@ -48,6 +48,9 @@ export function CircuitCallDemo({ midnight }: { midnight: UseDemoMode }) {
     <section className="panel">
       <h2>
         Seal a bid
+        <span className="privacy-badge" title="Your bid amount is a private circuit input — it is never displayed, logged, or put on-chain">
+          PRIVATE — amount sealed
+        </span>
         <span className="badge" style={{ marginLeft: 8 }}>
           SIMULATED — demo recording mode
         </span>
@@ -69,7 +72,18 @@ export function CircuitCallDemo({ midnight }: { midnight: UseDemoMode }) {
         {!connected ? <span className="muted">Connect your wallet first.</span> : null}
       </div>
 
-      {phase !== 'idle' ? <p className="status muted">{PHASE_TEXT[phase]}</p> : null}
+      {phase !== 'idle' ? (
+        <p className="status muted" role="status" aria-busy={busy}>
+          {busy ? (
+            <span className="spinner-row">
+              <span className="spinner" aria-hidden="true" />
+              {PHASE_TEXT[phase]}
+            </span>
+          ) : (
+            PHASE_TEXT[phase]
+          )}
+        </p>
+      ) : null}
 
       {result ? (
         <div className="status">
