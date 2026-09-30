@@ -168,3 +168,87 @@ input {
   color: var(--muted);
   margin-top: 12px;
 }
+
+/* Loading spinner shown during proof generation / submission. */
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: ovrabid-spin 0.8s linear infinite;
+}
+
+@keyframes ovrabid-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Privacy labeling: always-on badge marking sealed/private values. */
+.privacy-badge {
+  display: inline-block;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 2px 10px;
+  margin-left: 8px;
+  white-space: nowrap;
+}
+
+/* Mobile-responsive layout: compact spacing, fluid key/value grid and
+   comfortable touch targets below 640px. */
+@media (max-width: 640px) {
+  body {
+    font-size: 13px;
+  }
+
+  .container {
+    padding: 16px 12px 48px;
+  }
+
+  h1 {
+    font-size: 20px;
+  }
+
+  .panel {
+    padding: 14px 12px;
+  }
+
+  .panel h2 {
+    font-size: 14px;
+  }
+
+  .kv {
+    grid-template-columns: 104px 1fr;
+    font-size: 11px;
+  }
+
+  button {
+    padding: 10px 14px;
+  }
+}
+
+@media (max-width: 380px) {
+  .kv {
+    grid-template-columns: 1fr;
+  }
+
+  .kv .k {
+    margin-top: 4px;
+  }
+
+  .badge,
+  .privacy-badge {
+    margin-left: 0;
+    margin-top: 4px;
+  }
+}
