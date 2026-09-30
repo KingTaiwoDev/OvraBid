@@ -15,7 +15,7 @@ import { buildProviders, type OvraBidProviders } from '../lib/providers';
 import {
   joinContract,
   PRIVATE_STATE_ID,
-  CONTRACT_MODULE_URL,
+  CONTRACT_ARTIFACTS,
   type OvraBidFoundContract,
 } from '../lib/contract';
 import { createOvraBidPrivateState, freshSecretKey } from '../lib/private-state';
@@ -98,11 +98,10 @@ export function useMidnight(): UseMidnight {
       setAuction(null);
       return null;
     }
-    // Decode the ledger with the compiled contract's own decoder.
-    const artifacts = (await import(
-      /* @vite-ignore */ CONTRACT_MODULE_URL
-    )) as { ledger: (d: unknown) => Record<string, unknown> };
-    const ledger = artifacts.ledger((state as unknown as { data: unknown }).data);
+    // Decode the ledger with the compiled contract's own decoder (bundled
+    // with the app — see lib/contract.ts for why it must not be a separate
+    // runtime instance).
+    const ledger = CONTRACT_ARTIFACTS.ledger((state as unknown as { data: unknown }).data);
     const bestBid = ledger.bestBid as { is_some: boolean; value?: bigint } | undefined;
     const view: AuctionStateView = {
       phase: ledger.phase as number,
