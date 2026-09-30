@@ -214,7 +214,14 @@ So I built OvraBid. The chain stores only commitment digests (a `persistentHash`
 
 ## Demo Video
 
-[PLACEHOLDER — I will add the link after recording]
+**Submission video (Lace on the live dApp):** [PLACEHOLDER — I will add the link after recording]
+
+**Committed recordings — watch now:**
+
+[![OvraBid — sealing a bid with the real circuits in-browser](docs/demo/demo-final-state.png)](docs/demo/ovrabid-demo.mp4)
+
+- ▶ **[Circuit-run recording](docs/demo/ovrabid-demo.mp4)** (16s) — the real compiled OvraBid circuits executing in a browser: connect → proof generation → sealed result (demo mode, labeled SIMULATED; the bid amount is never shown).
+- ▶ **[Storyboard walkthrough](docs/demo/ovrabid-storyboard.mp4)** (55s) — the live deployment, the contract's current preprod state queried live from the network indexer, the in-browser circuit run, and caption cards marking the two Lace-only moments of the submission recording.
 
 ## Screenshots
 
