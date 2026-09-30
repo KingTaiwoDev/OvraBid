@@ -239,6 +239,8 @@ See [PROPOSAL.md](PROPOSAL.md).
 
 ## Demo Video
 
+**Level 3 one-minute demo:** ▶ [ovrabid-level3.mp4](docs/demo/ovrabid-level3.mp4) — full dApp flow (real circuits in-browser), `npm test` with 18 passing, and the green CI badge on this README.
+
 **Submission video (Lace on the live dApp):** [PLACEHOLDER — I will add the link after recording]
 
 **Committed recordings — watch now:**
