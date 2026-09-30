@@ -48,3 +48,9 @@ jobs:
 
       - name: Test web dApp
         run: npm --prefix web run test
+
+      - name: Install Chromium for the browser smoke test
+        run: npx playwright install chromium --with-deps
+
+      - name: Browser smoke test (built dApp in headless Chromium)
+        run: node scripts/browser-smoke.mjs
