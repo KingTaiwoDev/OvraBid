@@ -6,6 +6,10 @@
   "license": "Apache-2.0",
   "scripts": {
     "compile": "compact compile contracts/ovraBid.compact contracts/managed/ovraBid",
+    "sync:web": "node scripts/sync-web-assets.mjs",
+    "web:install": "npm --prefix web ci",
+    "web:build": "npm --prefix web run build",
+    "web:test": "npm --prefix web run test",
     "build": "npx tsc --noEmit || true",
     "typecheck": "npx tsc --noEmit",
     "setup": "npx tsx src/setup.ts",
@@ -26,7 +30,9 @@
   },
   "dependencies": {
     "@midnight-ntwrk/compact-runtime": "0.16.0",
+    "@midnight-ntwrk/dapp-connector-api": "^4.0.1",
     "@midnight-ntwrk/midnight-js-contracts": "4.1.1",
+    "@midnight-ntwrk/midnight-js-fetch-zk-config-provider": "^4.1.1",
     "@midnight-ntwrk/midnight-js-http-client-proof-provider": "4.1.1",
     "@midnight-ntwrk/midnight-js-indexer-public-data-provider": "4.1.1",
     "@midnight-ntwrk/midnight-js-level-private-state-provider": "4.1.1",
