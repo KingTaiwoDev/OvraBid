@@ -73,7 +73,11 @@ const failures = [];
 {
   const page = await browser.newPage();
   const errors = [];
+  const consoleErrors = [];
   page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => {
+    if (m.type() === 'error') consoleErrors.push(m.text());
+  });
   await page.goto(`${TARGET}/`, { waitUntil: 'networkidle' });
 
   const h1 = await page.textContent('h1');
@@ -82,6 +86,8 @@ const failures = [];
   const noWallet = await page.getByText('not detected', { exact: false }).count();
   if (noWallet === 0) failures.push('live: no-wallet message not rendered');
   if (errors.length) failures.push(`live: uncaught page errors: ${errors.join(' | ')}`);
+  // Production build must be console-clean (Level 3 requirement).
+  if (consoleErrors.length) failures.push(`live: console errors: ${consoleErrors.join(' | ')}`);
 
   // zkConfig assets must be statically reachable (live mode fetches them).
   const prover = await page.request.get(`${TARGET}/contract/ovraBid/keys/commitBid.prover`);
