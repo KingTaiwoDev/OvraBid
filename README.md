@@ -8,10 +8,12 @@
 
 ## Contract Address
 
-| Network  | Address                          |
-|----------|----------------------------------|
-| Preview  | `e85ec45682de57e3fea9855b0db8918168c4ff87ae429380d862d58fda786bdb` |
-| Preprod  | `fc8c852adc8ad6f6a784b4c8d338140380acd1c723c4a853ef4904df099f533b` |
+| Network  | Address                           |
+|----------|-----------------------------------|
+| **Preprod**  | `fc8c852adc8ad6f6a784b4c8d338140380acd1c723c4a853ef4904df099f533b` — **the deployment this dApp runs against** |
+| Preview  | `e85ec45682de57e3fea9855b0db8918168c4ff87ae429380d862d58fda786bdb` — Level 1 deployment |
+
+The dApp (and every snippet below) targets the **Preprod** address.
 
 ## What This Does
 
@@ -171,6 +173,28 @@ npm run dev
 Open http://localhost:5173, click **Connect Lace**, and seal a bid. The proof
 is generated in your browser via your wallet's proof server; the private
 amount never leaves it.
+
+**How the browser loads the contract:** the compiled module
+(`web/public/contract/ovraBid/contract/index.js`, refreshed by
+`npm run sync:web`) is **bundled into the app** by Vite, so the circuits,
+midnight-js and `@midnight-ntwrk/compact-runtime` share a single runtime
+instance — loading the module separately at runtime would create a second
+instance and break `instanceof` checks inside the circuits. Only the zkConfig
+assets (prover/verifier keys, ZKIR) are fetched at runtime by
+FetchZkConfigProvider from the same static tree. Because the imports are
+real npm dependencies of `web/`, the Netlify build (which installs `web/` in
+isolation) works with no node_modules shadowing.
+
+### Demo video
+
+The committed `docs/demo/ovrabid-demo.mp4` is a reproducible screen recording
+of the full flow (connect → seal → sealed result) generated headlessly by
+`node scripts/record-demo.mjs --mp4`. It runs the dApp's **demo mode**
+(`?demo=1`): a simulated chain executing the **real compiled circuits** in a
+real browser, with no wallet — always labeled "SIMULATED" on screen. The
+submission video is recorded against the **live deployment** with Lace; use
+the committed recording to verify the circuit flow without installing
+anything.
 
 ## Initial Idea
 
