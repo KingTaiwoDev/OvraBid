@@ -1,6 +1,10 @@
 # OvraBid
 
-> A sealed-bid auction on Midnight: private bids, verifiable winner.
+> A sealed-bid auction on Midnight: private bids, verifiable winner — now with a browser dApp.
+
+## Live Demo
+
+[PENDING — pasted after Netlify deploy]
 
 ## Contract Address
 
@@ -11,7 +15,7 @@
 
 ## What This Does
 
-OvraBid implements a **sealed-bid auction** as a Midnight smart contract written in Compact.
+OvraBid implements a **sealed-bid auction** as a Midnight smart contract written in Compact, with a React + Vite browser dApp (Level 2) that connects the Lace wallet and calls the deployed contract.
 
 In a traditional on-chain auction, every bid is public — bidders can wait at the finish line and snipe the highest offer at the last second, and everyone learns your budget. OvraBid fixes this with zero-knowledge proofs:
 
@@ -20,6 +24,8 @@ In a traditional on-chain auction, every bid is public — bidders can wait at t
 3. **Claim** — the winner registers themselves (again via a hash equality inside the circuit) and claims the auction. The circuit verifies "I know the secret key whose hash equals `winnerSKHash`" without revealing the key.
 
 The contract supports **multi-round auctions**: after settlement the seller can start the next round, and the `round` counter keeps climbing.
+
+In the browser dApp, **Seal a secret bid** calls the `commitBid` circuit: the amount is generated inside your browser, proven locally against the circuit's prover key, balanced and signed by Lace, and submitted to preprod — the UI itself never displays the amount (it shows `████ (sealed)`).
 
 ## Privacy Model
 
@@ -43,17 +49,24 @@ The contract supports **multi-round auctions**: after settlement the seller can 
 - `claimWin` — "I hold the secret key whose domain-separated hash equals `winnerSKHash`"
 - seller actions — "I am the seller" via `sellerCommit` hash equality, without revealing the key
 
+## Privacy Claim
+
+An on-chain observer (indexer, block explorer, anyone running a node) sees: the auction's phase and round, the cumulative `bidCount`, three 32-byte commitment digests (`sellerCommit`, `bestCommit`, `winnerSKHash`), and — only after the open phase — the winning `bestBid`. The observer **cannot** see: any individual bid amount before the open phase, the salt any bidder used, anyone's secret key, or which wallet produced which commitment (fresh salts make bids unlinkable). In the dApp this extends to the browser itself: the bid amount never appears in the UI, the network log, or the transaction payload — only inside the ZK proof.
+
 ## Tech Stack
 
-- **Midnight Network** (privacy-first blockchain with ZK proofs)
+- **Midnight Network** (privacy-first blockchain with ZK proofs) — preprod
 - **Compact** — Midnight's smart contract language for zero-knowledge circuits
-- Node.js v22+, Docker (proof server)
-- TypeScript, Vitest, midnight-js SDK 4.1.1
+- **Midnight.js SDK 4.1.1** (`midnight-js-contracts`, providers, `dapp-connector-api`)
+- **React 18 + Vite 7 + TypeScript** — the browser dApp (`web/`)
+- **Lace wallet** (Midnight edition) — key custody, signing, submission
+- Node.js v22+, Docker (proof server), Vitest
 
 ## Prerequisites
 
+- **Lace wallet** (Midnight edition) browser extension, set to the **preprod** network — required for the dApp
 - Node.js ≥ 22 (`node --version`)
-- Docker running (`docker info`)
+- Docker running (`docker info`) — for contract compilation and the local proof server
 - The Compact compiler toolchain (installed via the [compact devtools](https://github.com/midnightntwrk/compact/releases)):
   ```bash
   curl -sL https://github.com/midnightntwrk/compact/releases/latest/download/compact-installer.sh | sh
@@ -139,6 +152,26 @@ npm test
 - **State transitions** — the full lifecycle `NO_AUCTION → COMMIT → OPEN → CLAIMED → NO_AUCTION`, multi-round replay, multi-participant bidding
 - **Privacy guarantees** — bid amounts, salts and secret keys never appear in any public ledger field; bids with different salts are unlinkable
 
+The browser dApp has its own suite:
+
+```bash
+npm run web:test     # 8 tests: error classification, randomness, wiring
+npm run web:build    # typecheck + production build
+npm run dev          # dev server at http://localhost:5173
+```
+
+### Running the dApp locally
+
+```bash
+npm install && npm run web:install
+npm run compile && npm run sync:web   # refreshes web/public/contract assets
+npm run dev
+```
+
+Open http://localhost:5173, click **Connect Lace**, and seal a bid. The proof
+is generated in your browser via your wallet's proof server; the private
+amount never leaves it.
+
 ## Initial Idea
 
 Every auction I had seen on a public chain had the same flaw: the bid is the transaction. Anyone watching can read your ceiling from the ledger, wait for the last block, and outbid you by the smallest possible margin. Sealed-bid formats — the kind used for procurement, spectrum licenses, and treasury issuance in traditional finance — were simply impossible when the ledger itself is the room.
@@ -146,6 +179,10 @@ Every auction I had seen on a public chain had the same flaw: the bid is the tra
 Midnight changed that calculus for me. Its data-protection model lets the competitive information in an application (an amount, a choice, an identity) live inside zero-knowledge circuits and private state, while the coordination information — phases, counters, commitments — stays publicly verifiable. That is exactly the split a sealed-bid auction needs: everyone can see that an auction is running and how many bids exist, but nobody can see what anyone bid.
 
 So I built OvraBid. The chain stores only commitment digests (a `persistentHash` of the amount, a fresh salt, and the bidder's secret key); the winning amount is revealed inside a ZK circuit rather than in a transaction; and the winner proves they hold the winning preimage — all without the ledger ever learning a bid before the open phase. The point I wanted this submission to prove is that an application's state machine can be fully public while its valuable state stays sealed — and that every claim here is independently verifiable: compile the contract yourself, run the 18 circuit tests, and query the indexer for both deployed contracts.
+
+## Demo Video
+
+[PLACEHOLDER — I will add the link after recording]
 
 ## Screenshots
 
