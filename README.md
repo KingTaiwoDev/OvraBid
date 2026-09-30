@@ -166,10 +166,22 @@ npm run cli          # interactive menu: start / commit / open / claim / settle
 npm test
 ```
 
-18 tests run the compiled ZK circuits entirely in-process (no network, no prover) via a simulator, covering:
-- **Circuit logic** — commitment binding, phase guards, authorization asserts
-- **State transitions** — the full lifecycle `NO_AUCTION → COMMIT → OPEN → CLAIMED → NO_AUCTION`, multi-round replay, multi-participant bidding
-- **Privacy guarantees** — bid amounts, salts and secret keys never appear in any public ledger field; bids with different salts are unlinkable
+Latest run: **18 passed (18)** — `✓ tests/ovraBid.test.ts (18 tests)`.
+
+The suite (`tests/ovraBid.test.ts`) runs the compiled ZK circuits entirely
+in-process via a simulator (no network, no prover) and covers the three
+required areas — each its own `describe` block:
+
+| Required area | `describe` block | Tests | Sample assertions |
+|---|---|---|---|
+| **Circuit logic** | `OvraBid > circuit logic` | 7 | commitments bind to (amount, salt, key); bids rejected outside COMMIT; non-seller can't end phase; forged reveals fail |
+| **State transitions** | `OvraBid > state transitions` | 7 | full lifecycle `NO_AUCTION → COMMIT → OPEN → CLAIMED → NO_AUCTION`; multi-round replay; multi-participant interleaving |
+| **Privacy** | `OvraBid > privacy guarantees` | 4 | amount/salt never appear in any ledger field; different-salt bids are unlinkable to a key |
+
+The browser dApp has its own suite: `npm run web:test` — 8 tests (error
+classification, randomness, wiring constants), plus a headless-Chromium
+smoke test in CI that executes the real circuits in-page against the built
+dApp.
 
 The browser dApp has its own suite:
 
@@ -235,7 +247,22 @@ So I built OvraBid. The chain stores only commitment digests (a `persistentHash`
 
 ## Product Proposal
 
-See [PROPOSAL.md](PROPOSAL.md).
+See [PROPOSAL.md](PROPOSAL.md) — it substantively answers all four required
+questions:
+
+1. **Product & users** — a sealed-bid auction engine where the bid is a
+   secret; buyers in procurement, treasury issuance, NFT sales and M&A
+   processes whose price discovery is distorted by transparent ledgers.
+2. **Why Midnight** — a sealed-bid auction is self-contradictory on a
+   transparent chain (the ledger *is* the room); Midnight is the only model
+   where coordination state is public while the competitive secret lives
+   only as circuit witnesses, with proofs — not operators — enforcing the
+   reveal.
+3. **Data model** — an 11-row table splitting every data point into public
+   ledger / private witness / ZK-proved (mirrors the Privacy Model above).
+4. **Mainnet feasibility** — realistic by Level 6: the contract, browser
+   proving and indexer reads carry over unchanged; remaining work is
+   operational (funding, Lace mainnet profile, cost tuning, audit).
 
 ## Demo Video
 
